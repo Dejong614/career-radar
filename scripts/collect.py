@@ -79,6 +79,8 @@ def match_metros(location):
 def eligible(source, title, employment=""):
     track = source["track"]
     if track == "traffic":
+        if re.search(r"structural|bridge", title, re.I) and not re.search(r"traffic", title, re.I):
+            return False
         return bool(TRAFFIC.search(title) and INTERN.search(title + " " + employment))
     if source.get("intern_only") and not INTERN.search(title + " " + employment):
         return False

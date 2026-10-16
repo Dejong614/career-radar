@@ -13,6 +13,7 @@ class CollectorTests(unittest.TestCase):
         self.assertTrue(c.eligible({"track": "traffic"}, "Transportation Engineering Intern"))
         self.assertFalse(c.eligible({"track": "traffic"}, "Traffic Engineer"))
         self.assertFalse(c.eligible({"track": "traffic"}, "Software Engineering Intern"))
+        self.assertFalse(c.eligible({"track": "traffic"}, "Structural Engineering Intern - Bridge & Transportation Structures"))
         self.assertTrue(c.eligible({"track": "insurance"}, "Research & Development Analyst"))
         self.assertFalse(c.eligible({"track": "insurance"}, "Sales Development Representative"))
         self.assertFalse(c.eligible({"track": "insurance"}, "Director Market Research"))
