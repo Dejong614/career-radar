@@ -1,0 +1,12 @@
+[
+  {"id":"fehr-peers","company":"Fehr & Peers","provider":"lever","board":"fehrandpeers","track":"traffic","homepage":"https://jobs.lever.co/fehrandpeers"},
+  {"id":"aecom","company":"AECOM","provider":"smartrecruiters","board":"AECOM2","track":"traffic","queries":["traffic","transportation"],"homepage":"https://careers.aecom.com/"},
+  {"id":"waymo","company":"Waymo","provider":"greenhouse","board":"waymo","track":"av","homepage":"https://careers.withwaymo.com/"},
+  {"id":"zoox","company":"Zoox","provider":"lever","board":"zoox","track":"av","homepage":"https://jobs.lever.co/zoox"},
+  {"id":"aurora","company":"Aurora","provider":"ashby","board":"aurora-operations-inc","track":"av","homepage":"https://aurora.tech/careers"},
+  {"id":"nuro","company":"Nuro","provider":"greenhouse","board":"nuro","track":"av","homepage":"https://www.nuro.ai/careers"},
+  {"id":"waabi","company":"Waabi","provider":"lever","board":"waabi","track":"av","homepage":"https://waabi.ai/careers"},
+  {"id":"geico","company":"GEICO","provider":"workday","host":"geico.wd1.myworkdayjobs.com","tenant":"geico","board":"External","track":"insurance","queries":["research","data scientist","modeling","actuarial"],"homepage":"https://geico.wd1.myworkdayjobs.com/External"},
+  {"id":"atbay","company":"At-Bay","provider":"greenhouse","board":"atbayjobs","track":"insurance","homepage":"https://job-boards.greenhouse.io/atbayjobs"},
+  {"id":"travelers","company":"Travelers","provider":"workday","host":"travelers.wd5.myworkdayjobs.com","tenant":"travelers","board":"External","track":"insurance","queries":["research","data scientist","modeling","actuarial"],"homepage":"https://travelers.wd5.myworkdayjobs.com/External"}
+]
