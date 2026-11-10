@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 1
+          fetch-depth: 0
       # One-time browser-upload bootstrap; subsequent runs use normal tracked files.
       - name: Unpack initial source archive if present
         run: |
@@ -48,6 +48,14 @@ jobs:
           python -m unittest discover -s tests -p 'test_*.py'
           node tests/analytics.test.js
           node --check web/app.js
+          if [ -f web/history.js ]; then node --check web/history.js; fi
+          if [ -f web/careers.js ]; then node --check web/careers.js; fi
+      - name: Recover observed history and check public career sources
+        run: |
+          if [ -f scripts/history.py ]; then
+            python scripts/history.py
+            python scripts/careers.py --refresh
+          fi
       - name: Collect employer postings
         id: collect
         continue-on-error: true
@@ -65,8 +73,13 @@ jobs:
         run: |
           mkdir -p _site/web _site/data
           cp index.html .nojekyll _site/
-          cp web/app.js web/analytics.js _site/web/
+          cp web/*.js _site/web/
           cp data/jobs.json _site/data/
+          if [ -f history.html ]; then
+            cp history.html careers.html _site/
+            cp web/*.css _site/web/
+            cp data/history.json data/people.json data/people-health.json _site/data/
+          fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
