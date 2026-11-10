@@ -2,6 +2,8 @@ import importlib.util
 from pathlib import Path
 import tempfile
 import unittest
+import sys
+sys.path.insert(0, str(Path(__file__).parents[1] / "scripts"))
 
 spec = importlib.util.spec_from_file_location("collector", Path(__file__).parents[1] / "scripts/collect.py")
 c = importlib.util.module_from_spec(spec)
@@ -11,7 +13,7 @@ spec.loader.exec_module(c)
 class CollectorTests(unittest.TestCase):
     def test_scope(self):
         self.assertTrue(c.eligible({"track": "traffic"}, "Transportation Engineering Intern"))
-        self.assertFalse(c.eligible({"track": "traffic"}, "Traffic Engineer"))
+        self.assertTrue(c.eligible({"track": "traffic"}, "Traffic Engineer"))
         self.assertFalse(c.eligible({"track": "traffic"}, "Software Engineering Intern"))
         self.assertFalse(c.eligible({"track": "traffic"}, "Structural Engineering Intern - Bridge & Transportation Structures"))
         self.assertTrue(c.eligible({"track": "insurance"}, "Research & Development Analyst"))
@@ -47,11 +49,18 @@ class CollectorTests(unittest.TestCase):
             self.assertEqual(db.execute("SELECT active FROM jobs").fetchone()[0], 1)
             c.apply_success(db, "test", [], "2026-01-02T00:00:00+00:00", 0)
             self.assertEqual(db.execute("SELECT active FROM jobs").fetchone()[0], 0)
+            closed = db.execute("SELECT first_missing_at,closed_detected_at,closed_lower_bound,closed_upper_bound FROM jobs").fetchone()
+            self.assertEqual(closed[0], "2026-01-01T12:00:00+00:00")
+            self.assertEqual(closed[1], "2026-01-02T00:00:00+00:00")
+            self.assertEqual(closed[2], "2026-01-01T00:00:00+00:00")
+            self.assertEqual(closed[3], "2026-01-01T12:00:00+00:00")
             c.apply_success(db, "test", [job], "2026-01-03T00:00:00+00:00", 1)
             row = db.execute("SELECT active,first_seen,last_seen FROM jobs").fetchone()
             self.assertEqual(row[0], 1)
             self.assertEqual(row[1], "2026-01-01T00:00:00+00:00")
             self.assertEqual(row[2], "2026-01-03T00:00:00+00:00")
+            self.assertIsNone(db.execute("SELECT closed_detected_at FROM jobs").fetchone()[0])
+            self.assertEqual([r[0] for r in db.execute("SELECT event FROM job_events ORDER BY occurred_at")], ["opened", "closed", "reopened"])
             db.close()
 
 

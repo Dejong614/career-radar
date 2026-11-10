@@ -14,9 +14,10 @@ import time
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
+from matching import background_match, job_kind, PROFILE_VERSION
 
 ROOT = Path(__file__).resolve().parents[1]
-TRACKS = {"traffic": "交通工程实习", "insurance": "保险研发", "av": "自动驾驶研究"}
+TRACKS = {"traffic": "交通工程", "insurance": "保险研发", "av": "自动驾驶研究"}
 METROS = {
     "Seattle": ["seattle", "bellevue", "redmond", "kirkland", "tacoma", "everett"],
     "Portland": ["portland", "beaverton", "hillsboro"],
@@ -81,7 +82,7 @@ def eligible(source, title, employment=""):
     if track == "traffic":
         if re.search(r"structural|bridge", title, re.I) and not re.search(r"traffic", title, re.I):
             return False
-        return bool(TRAFFIC.search(title) and INTERN.search(title + " " + employment))
+        return bool(TRAFFIC.search(title))
     if source.get("intern_only") and not INTERN.search(title + " " + employment):
         return False
     if track == "insurance":
@@ -112,19 +113,23 @@ def extract_skills(text):
     return result
 
 
-def normalize(source, external_id, title, location, description, url, posted_at=None, updated_at=None, employment=""):
+def normalize(source, external_id, title, location, description, url, posted_at=None, updated_at=None, employment="", deadline=None):
     if not eligible(source, title, employment):
         return None
     metros = match_metros(location)
     if not metros or urlparse(url).scheme != "https":
         return None
     text = plain(description)
-    return {"id": hashlib.sha256((source["id"] + ":" + str(external_id)).encode()).hexdigest()[:24],
+    job = {"id": hashlib.sha256((source["id"] + ":" + str(external_id)).encode()).hexdigest()[:24],
             "source_id": source["id"], "external_id": str(external_id), "company": source["company"], "title": plain(title),
             "track": source["track"], "location": location, "metros": metros, "url": url,
             "posted_at": posted_at, "source_updated_at": updated_at,
             "employment": "Internship" if INTERN.search(title + " " + employment) else employment or "Not specified",
-            "skills": extract_skills(text), "description_hash": hashlib.sha256(text.encode()).hexdigest()}
+            "skills": extract_skills(text), "application_deadline": deadline,
+            "description_hash": hashlib.sha256(text.encode()).hexdigest()}
+    job["kind"] = job_kind(job)
+    job["background_match"] = background_match(job)
+    return job
 
 
 def fetch_source(source):
@@ -138,7 +143,8 @@ def fetch_source(source):
         for job in data["jobs"]:
             scanned += 1
             loc = job.get("location", {}).get("name", "")
-            records.append(normalize(source, job["id"], job["title"], loc, job.get("content", ""), job["absolute_url"], updated_at=job.get("updated_at")))
+            metadata = " ".join(str(m.get("value", "")) for m in (job.get("metadata") or []) if re.search(r"employment|job type|time type", m.get("name", ""), re.I))
+            records.append(normalize(source, job["id"], job["title"], loc, job.get("content", ""), job["absolute_url"], updated_at=job.get("updated_at"), employment=metadata))
     elif provider == "ashby":
         data = request_json(f"https://api.ashbyhq.com/posting-api/job-board/{board}")
         if not isinstance(data.get("jobs"), list):
@@ -211,7 +217,7 @@ def fetch_source(source):
                         continue
                     detail = request_json(base + path)["jobPostingInfo"]
                     loc = "; ".join([detail.get("location", "")] + detail.get("additionalLocations", []))
-                    records.append(normalize(source, detail.get("jobReqId", path), job["title"], loc, detail.get("jobDescription", ""), detail.get("externalUrl") or f"https://{source['host']}/en-US/{board}{path}", posted_at=detail.get("startDate"), employment=detail.get("timeType", "")))
+                    records.append(normalize(source, detail.get("jobReqId", path), job["title"], loc, detail.get("jobDescription", ""), detail.get("externalUrl") or f"https://{source['host']}/en-US/{board}{path}", posted_at=detail.get("startDate"), employment=detail.get("timeType", ""), deadline=detail.get("endDate")))
                 offset += len(data["jobPostings"])
                 if offset >= data["total"]:
                     break
@@ -237,25 +243,43 @@ def open_db(path):
     CREATE TABLE IF NOT EXISTS source_status (
       id TEXT PRIMARY KEY, last_success TEXT, last_attempt TEXT, error TEXT,
       scanned INTEGER DEFAULT 0, matched INTEGER DEFAULT 0);
+    CREATE TABLE IF NOT EXISTS job_events (
+      job_id TEXT, occurred_at TEXT, event TEXT, lower_bound TEXT, upper_bound TEXT,
+      basis TEXT NOT NULL DEFAULT 'collector', PRIMARY KEY(job_id,occurred_at,event));
     """)
+    columns = {row[1] for row in db.execute("PRAGMA table_info(jobs)")}
+    for column in ["first_missing_at", "closed_detected_at", "closed_lower_bound", "closed_upper_bound", "application_deadline"]:
+        if column not in columns:
+            db.execute(f"ALTER TABLE jobs ADD COLUMN {column} TEXT")
+    status_columns = {row[1] for row in db.execute("PRAGMA table_info(source_status)")}
+    if "policy_version" not in status_columns:
+        db.execute("ALTER TABLE source_status ADD COLUMN policy_version TEXT")
+    db.commit()
     return db
 
 
 def apply_success(db, source_id, jobs, timestamp, scanned):
     with db:
         # Two complete successful misses before closing; errors never retire jobs.
-        db.execute("UPDATE jobs SET missing_runs=missing_runs+1 WHERE source_id=?", (source_id,))
+        db.execute("UPDATE jobs SET first_missing_at=CASE WHEN missing_runs=0 THEN ? ELSE first_missing_at END, missing_runs=missing_runs+1 WHERE source_id=? AND active=1", (timestamp, source_id))
         for job in jobs:
+            previous = db.execute("SELECT active FROM jobs WHERE id=?", (job["id"],)).fetchone()
+            if previous is None or not previous["active"]:
+                db.execute("INSERT OR IGNORE INTO job_events(job_id,occurred_at,event) VALUES(?,?,?)", (job["id"], timestamp, "opened" if previous is None else "reopened"))
             db.execute("""INSERT INTO jobs(id,source_id,url,posted_at,first_seen,last_seen,payload)
               VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
               url=excluded.url,posted_at=coalesce(excluded.posted_at,jobs.posted_at),
-              last_seen=excluded.last_seen,active=1,missing_runs=0,payload=excluded.payload""",
+              last_seen=excluded.last_seen,active=1,missing_runs=0,first_missing_at=NULL,
+              closed_detected_at=NULL,closed_lower_bound=NULL,closed_upper_bound=NULL,payload=excluded.payload""",
                        (job["id"], source_id, job["url"], job["posted_at"], timestamp, timestamp, json.dumps(job, ensure_ascii=False)))
-        db.execute("UPDATE jobs SET active=0 WHERE source_id=? AND missing_runs>=2", (source_id,))
-        db.execute("""INSERT INTO source_status(id,last_success,last_attempt,error,scanned,matched)
-          VALUES(?,?,?,NULL,?,?) ON CONFLICT(id) DO UPDATE SET
+            db.execute("UPDATE jobs SET application_deadline=? WHERE id=?", (job.get("application_deadline"), job["id"]))
+        for row in db.execute("SELECT * FROM jobs WHERE source_id=? AND active=1 AND missing_runs>=2", (source_id,)).fetchall():
+            db.execute("INSERT OR IGNORE INTO job_events(job_id,occurred_at,event,lower_bound,upper_bound) VALUES(?,?,'closed',?,?)", (row["id"], timestamp, row["last_seen"], row["first_missing_at"]))
+        db.execute("UPDATE jobs SET active=0,closed_detected_at=?,closed_lower_bound=last_seen,closed_upper_bound=first_missing_at WHERE source_id=? AND active=1 AND missing_runs>=2", (timestamp, source_id))
+        db.execute("""INSERT INTO source_status(id,last_success,last_attempt,error,scanned,matched,policy_version)
+          VALUES(?,?,?,NULL,?,?,?) ON CONFLICT(id) DO UPDATE SET
           last_success=excluded.last_success,last_attempt=excluded.last_attempt,error=NULL,
-          scanned=excluded.scanned,matched=excluded.matched""", (source_id, timestamp, timestamp, scanned, len(jobs)))
+          scanned=excluded.scanned,matched=excluded.matched,policy_version=excluded.policy_version""", (source_id, timestamp, timestamp, scanned, len(jobs), PROFILE_VERSION))
 
 
 def export(db, sources, timestamp, destination):
@@ -265,24 +289,32 @@ def export(db, sources, timestamp, destination):
         if row["source_id"] not in configured:
             continue
         job = json.loads(row["payload"])
+        job["kind"] = job_kind(job)
+        job["background_match"] = background_match(job)
         if not eligible(configured[row["source_id"]], job["title"], job["employment"]):
             continue
         if job["url"] in urls:
             continue
         urls.add(job["url"])
-        job.update(first_seen=row["first_seen"], last_seen=row["last_seen"], posted_at=row["posted_at"], pending_closure=bool(row["missing_runs"]))
+        job.update(first_seen=row["first_seen"], last_seen=row["last_seen"], posted_at=row["posted_at"], pending_closure=bool(row["missing_runs"]), first_missing_at=row["first_missing_at"], application_deadline=row["application_deadline"])
         job.pop("description_hash", None)
         jobs.append(job)
     statuses = {row["id"]: dict(row) for row in db.execute("SELECT * FROM source_status")}
-    result = {"schema_version": 1, "generated_at": timestamp, "refresh_hours": 12, "tracks": TRACKS,
+    result = {"schema_version": 2, "generated_at": timestamp, "refresh_hours": 12, "profile_version": PROFILE_VERSION, "tracks": TRACKS,
               "metros": list(METROS), "jobs": jobs,
               "sources": [{**s, **statuses.get(s["id"], {})} for s in sources]}
+    result["traffic_jobs_collected"] = any(s["track"] == "traffic" and statuses.get(s["id"], {}).get("policy_version") == PROFILE_VERSION for s in sources)
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(json.dumps(result, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     # Also embed a snapshot for direct file:// opening and graceful network fallback.
     template = (ROOT / "web/index.template.html").read_text(encoding="utf-8")
     embedded = json.dumps(result, ensure_ascii=False).replace("<", "\\u003c").replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
     (ROOT / "index.html").write_text(template.replace("__SNAPSHOT__", embedded), encoding="utf-8")
+    from history import record_snapshot, export_history
+    record_snapshot(db, result, revision="live:" + timestamp)
+    export_history(db)
+    from careers import build_careers
+    build_careers()
     return result
 
 
@@ -295,6 +327,10 @@ def main():
     sources = json.loads(args.sources.read_text(encoding="utf-8"))
     db = open_db(args.db)
     timestamp, successes = now(), 0
+    if args.export_only:
+        previous = ROOT / "data/jobs.json"
+        if previous.exists():
+            timestamp = json.loads(previous.read_text(encoding="utf-8"))["generated_at"]
     if not args.export_only:
         with ThreadPoolExecutor(max_workers=4) as pool:
             futures = {pool.submit(fetch_source, s): s for s in sources}
