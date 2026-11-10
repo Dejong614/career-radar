@@ -15,8 +15,8 @@ function draw(){
  if(!months.length){$('snapshot-label').textContent='尚无真实历史快照。';return;}
  const frame=selectedFrame(),month=months[index],current=new Date().toISOString().slice(0,7),partial=month===current;
  $('month-label').textContent=month.replace('-',' 年 ')+' 月'+(partial?' · 部分月份':'');
- $('snapshot-label').textContent=`采用本月最后一次真实快照：${fmt(frame.observed_at)}；${data.frames.filter(f=>f.observed_at.startsWith(month)).length} 次观测。`;
- const warnings=[];if(kind==='job'&&!frame.traffic_jobs_collected)warnings.push('该月尚未采集交通全职，显示“未采集”，不当成 0。');if(frame.source_issues.length)warnings.push('当次存在失败或过期来源：'+frame.source_issues.join('、')+'；保留数据可能不完整。');
+ $('snapshot-label').textContent=`采用本月最后一次真实快照：${fmt(frame.observed_at)}；${data.frames.filter(f=>f.observed_at.startsWith(month)).length} 次观测。${frame.source_count?` 当次配置 ${frame.source_count} 个来源。`:''}`;
+ const warnings=['2026 年 11 月扩充了雇主来源。跨月数量变化同时受覆盖范围影响，不能直接解释为招聘市场增长。'];if(kind==='job'&&!frame.traffic_jobs_collected)warnings.push('该月尚未采集交通全职，显示“未采集”，不当成 0。');if(frame.source_issues.length)warnings.push('当次存在失败或过期来源：'+frame.source_issues.join('、')+'；保留数据可能不完整。');
  $('history-warning').textContent=warnings.join(' ');$('history-warning').hidden=!warnings.length;
  // Fixed scale across all observed frames under this same type and scope.
  const max=Math.max(1,...data.frames.flatMap(f=>cities.map(c=>Object.values(values(f,c)).reduce((a,b)=>a+(b||0),0))));

@@ -19,19 +19,19 @@ from matching import background_match, job_kind, PROFILE_VERSION
 ROOT = Path(__file__).resolve().parents[1]
 TRACKS = {"traffic": "交通工程", "insurance": "保险研发", "av": "自动驾驶研究"}
 METROS = {
-    "Seattle": ["seattle", "bellevue", "redmond", "kirkland", "tacoma", "everett"],
+    "Seattle": ["seattle", "bellevue", "redmond", "kirkland", "tacoma", "everett", "renton"],
     "Portland": ["portland", "beaverton", "hillsboro"],
     "Los Angeles": ["los angeles", "santa monica", "pasadena", "irvine", "long beach", "orange county", "culver city"],
     "San Francisco": ["san francisco", "san jose", "mountain view", "palo alto", "menlo park", "foster city", "san mateo", "sunnyvale", "oakland", "berkeley", "redwood city", "fremont", "bay area", "walnut creek", "santa clara"],
     "Raleigh": ["raleigh", "durham", "cary", "morrisville", "research triangle"],
     "New York": ["new york", "nyc", "brooklyn", "jersey city", "manhattan", "newark", "hoboken"],
-    "Washington DC": ["washington, dc", "washington dc", "washington, d.c.", "district of columbia", "arlington, va", "alexandria, va", "bethesda", "mclean", "reston", "tysons", "rockville", "chevy chase"]
+    "Washington DC": ["washington, dc", "washington dc", "washington, d.c.", "district of columbia", "arlington, va", "alexandria, va", "bethesda", "mclean", "reston", "tysons", "rockville", "chevy chase", "herndon"]
 }
 SKILL_RULES = json.loads((ROOT / "config/skills.json").read_text(encoding="utf-8"))
 INTERN = re.compile(r"\b(?:intern(?:ship)?s?|co[ -]?op)\b", re.I)
 RESEARCH = re.compile(r"research|scientist|machine learning|applied science|\br\s*&\s*d\b", re.I)
-INSURANCE = re.compile(r"research|scientist|\br\s*&\s*d\b|actuar|(?:risk|predictive|pricing|catastrophe).*model|model.*(?:risk|pricing)|machine learning", re.I)
-AV = re.compile(r"research|scientist|machine learning|perception|prediction|motion planning|behavior planning|simulation|robotics|foundation model", re.I)
+INSURANCE = re.compile(r"research|scientist|statistician|pricing.*analyst|\br\s*&\s*d\b|actuar|(?:risk|predictive|pricing|catastrophe).*model|model.*(?:risk|pricing)|machine learning", re.I)
+AV = re.compile(r"research|scientist|machine learning|perception|prediction|motion planning|behavior planning|simulation|robotics|foundation model|autonom(?:y|ous)", re.I)
 TRAFFIC = re.compile(r"traffic|transportation|transport planning|transport engineer|mobility", re.I)
 
 
@@ -70,6 +70,8 @@ def match_metros(location):
     metros = [city for city, aliases in METROS.items() if any(re.search(r"(?<!\w)" + re.escape(alias) + r"(?!\w)", loc) for alias in aliases)]
     if re.search(r"portland,?\s*(?:me\b|maine)", loc):
         metros = [m for m in metros if m != "Portland"]
+    if re.search(r"\borange,\s*(?:ca\b|california)", loc) and 'Los Angeles' not in metros:
+        metros.append('Los Angeles')
     if re.search(r"\b(?:remote|united states.*remote|us.remote)\b", loc) and not metros:
         # Remote without a country is accepted only on these US employer boards;
         # UI keeps this bucket off by default, and preserves original wording.
@@ -89,7 +91,8 @@ def eligible(source, title, employment=""):
         if re.search(r"market(?:ing)? research|user research|ux research|consumer insights", title, re.I):
             return False
         return bool(INSURANCE.search(title))
-    return bool(RESEARCH.search(title) or (re.search(r"engineer", title, re.I) and AV.search(title)))
+    return bool(RESEARCH.search(title) or (re.search(r"engineer", title, re.I) and AV.search(title)) or
+                (source.get('additional_titles') and re.search(source['additional_titles'], title, re.I)))
 
 
 def extract_skills(text):
@@ -113,8 +116,8 @@ def extract_skills(text):
     return result
 
 
-def normalize(source, external_id, title, location, description, url, posted_at=None, updated_at=None, employment="", deadline=None):
-    if not eligible(source, title, employment):
+def normalize(source, external_id, title, location, description, url, posted_at=None, updated_at=None, employment="", deadline=None, context=""):
+    if not eligible(source, title + ' ' + context, employment):
         return None
     metros = match_metros(location)
     if not metros or urlparse(url).scheme != "https":
@@ -122,7 +125,7 @@ def normalize(source, external_id, title, location, description, url, posted_at=
     text = plain(description)
     job = {"id": hashlib.sha256((source["id"] + ":" + str(external_id)).encode()).hexdigest()[:24],
             "source_id": source["id"], "external_id": str(external_id), "company": source["company"], "title": plain(title),
-            "track": source["track"], "location": location, "metros": metros, "url": url,
+            "track": source["track"], "location": location, "metros": metros, "url": url, "discipline": context,
             "posted_at": posted_at, "source_updated_at": updated_at,
             "employment": "Internship" if INTERN.search(title + " " + employment) else employment or "Not specified",
             "skills": extract_skills(text), "application_deadline": deadline,
@@ -224,7 +227,8 @@ def fetch_source(source):
                 if not data["jobPostings"] or offset > 10000:
                     raise ValueError("Incomplete Workday pagination")
     else:
-        raise ValueError(f"Unsupported provider: {provider}")
+        from employer_sources import fetch_extra
+        return fetch_extra(source, normalize, eligible, match_metros, request_json)
     # One source is applied atomically only after every page/detail succeeds.
     return [r for r in records if r], scanned
 
@@ -291,7 +295,7 @@ def export(db, sources, timestamp, destination):
         job = json.loads(row["payload"])
         job["kind"] = job_kind(job)
         job["background_match"] = background_match(job)
-        if not eligible(configured[row["source_id"]], job["title"], job["employment"]):
+        if not eligible(configured[row["source_id"]], job["title"] + ' ' + job.get('discipline', ''), job["employment"]):
             continue
         if job["url"] in urls:
             continue

@@ -95,3 +95,21 @@ node --check web/app.js
 ## 文件
 
 `scripts/collect.py` 采集/归一化/持久化/导出；`web/index.template.html` 模板；`web/analytics.js` 纯分析函数；`web/app.js` 页面交互；`.github/workflows/update.yml` 计划任务和发布。
+
+
+## 2026-11-10 招聘来源扩充
+
+来源从 10 个扩为 20 个。新增 Kittelson & Associates、WSP、Kimley-Horn、Progressive、Blue Cross Blue Shield Association、Blue Cross NC、Cambia / Regence、XPENG、GM 自动驾驶方向及 DiDi 国际公开招聘板。
+
+- Kittelson 使用官网现有职位及详情；“All offices”只映射同站公开办公室名单，与明确地点区分。Kimley-Horn 使用公开 iCIMS 列表、完整分页及 JobPosting 详情，参考 Discipline/Focus 收录标题泛称 Civil Engineering 的交通实习。
+- WSP 使用官方 Oracle 招聘搜索与详情，分页取美国公开职位并读取其他可选地点；只有全部页和详情成功后才更新该来源。
+- Progressive 完整遍历官网列表，再读取匹配职位的公开 JobPosting；当前匹配数可以是 0，不能理解成全公司没有招聘。
+- BCBS 不是一家统一招聘的雇主。协会、北卡公司和 Cambia / Regence 分别记录，未覆盖所有地区独立公司。仅写 North Carolina 的 Remote 不自动当 Raleigh 线下工作。
+- GM 已于 2025-02-04 全资收购 Cruise，故接入 GM 当前自动驾驶/研究公开 XML feed，不复用旧 Cruise 职位，不声称来源为独立 Cruise 招聘。明确 Fully remote 的州别记录归 US Remote，不作为 DC 办公岗位。
+- DiDi 使用国际官网公开搜索及详情接口，不覆盖其中国招聘站。无七城/美国远程研究匹配时显示成功采集、匹配 0；不绕过登录或 TLS 校验。
+- Schema.org validThrough 为结构化职位有效期，不能当作雇主明确申请截止日，因此不写入 application_deadline。新增来源没有历史观测时不追溯虚构发布日期与过去月度数量。
+- 历史页提示扩源影响，后续快照保留 source_ids/source_count；月份变化不等同市场增长。
+
+公开入口核验：Kittelson https://www.kittelson.com/current-opportunities/；WSP https://www.wsp.com/en-us/careers/job-opportunities?country=US；Kimley-Horn https://www.kimley-horn.com/careers/；Progressive https://careers.progressive.com/jobs/search/；BCBSA https://www.bcbs.com/about-us/jobs-careers；BCBS NC https://careers.bcbsnc.com/；Cambia https://www.cambiahealth.com/careers；XPENG https://www.xpeng.com/join-us；GM https://search-careers.gm.com/en/jobs/；DiDi https://careers.didiglobal.com/。
+
+Cruise 机构变化依据：https://investors.gm.com/news-releases/news-release-details/gm-acquires-full-ownership-cruise 。

@@ -37,7 +37,8 @@ def record_snapshot(db, data, revision):
             unhealthy.append(source["company"])
     row = {"observed_at": generated, "revision": revision, "counts": buckets,
            "traffic_jobs_collected": data.get("traffic_jobs_collected", False),
-           "source_issues": unhealthy, "scope_version": data.get("profile_version", "legacy-title-rules")}
+           "source_issues": unhealthy, "scope_version": data.get("profile_version", "legacy-title-rules"),
+           "source_ids": [s['id'] for s in data['sources']], "source_count": len(data['sources'])}
     with db:
         db.execute("INSERT OR IGNORE INTO snapshots VALUES(?,?,?)", (generated, revision, json.dumps(row, ensure_ascii=False, separators=(",", ":"))))
 

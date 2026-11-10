@@ -1,12 +1,235 @@
 [
-  {"id":"fehr-peers","company":"Fehr & Peers","provider":"lever","board":"fehrandpeers","track":"traffic","homepage":"https://jobs.lever.co/fehrandpeers"},
-  {"id":"aecom","company":"AECOM","provider":"smartrecruiters","board":"AECOM2","track":"traffic","queries":["traffic","transportation"],"homepage":"https://careers.aecom.com/"},
-  {"id":"waymo","company":"Waymo","provider":"greenhouse","board":"waymo","track":"av","homepage":"https://careers.withwaymo.com/"},
-  {"id":"zoox","company":"Zoox","provider":"lever","board":"zoox","track":"av","homepage":"https://jobs.lever.co/zoox"},
-  {"id":"aurora","company":"Aurora","provider":"ashby","board":"aurora-operations-inc","track":"av","homepage":"https://aurora.tech/careers"},
-  {"id":"nuro","company":"Nuro","provider":"greenhouse","board":"nuro","track":"av","homepage":"https://www.nuro.ai/careers"},
-  {"id":"waabi","company":"Waabi","provider":"lever","board":"waabi","track":"av","homepage":"https://waabi.ai/careers"},
-  {"id":"geico","company":"GEICO","provider":"workday","host":"geico.wd1.myworkdayjobs.com","tenant":"geico","board":"External","track":"insurance","queries":["research","data scientist","modeling","actuarial"],"homepage":"https://geico.wd1.myworkdayjobs.com/External"},
-  {"id":"atbay","company":"At-Bay","provider":"greenhouse","board":"atbayjobs","track":"insurance","homepage":"https://job-boards.greenhouse.io/atbayjobs"},
-  {"id":"travelers","company":"Travelers","provider":"workday","host":"travelers.wd5.myworkdayjobs.com","tenant":"travelers","board":"External","track":"insurance","queries":["research","data scientist","modeling","actuarial"],"homepage":"https://travelers.wd5.myworkdayjobs.com/External"}
+  {
+    "id": "fehr-peers",
+    "company": "Fehr & Peers",
+    "provider": "lever",
+    "board": "fehrandpeers",
+    "track": "traffic",
+    "homepage": "https://jobs.lever.co/fehrandpeers"
+  },
+  {
+    "id": "aecom",
+    "company": "AECOM",
+    "provider": "smartrecruiters",
+    "board": "AECOM2",
+    "track": "traffic",
+    "queries": [
+      "traffic",
+      "transportation"
+    ],
+    "homepage": "https://careers.aecom.com/"
+  },
+  {
+    "id": "waymo",
+    "company": "Waymo",
+    "provider": "greenhouse",
+    "board": "waymo",
+    "track": "av",
+    "homepage": "https://careers.withwaymo.com/"
+  },
+  {
+    "id": "zoox",
+    "company": "Zoox",
+    "provider": "lever",
+    "board": "zoox",
+    "track": "av",
+    "homepage": "https://jobs.lever.co/zoox"
+  },
+  {
+    "id": "aurora",
+    "company": "Aurora",
+    "provider": "ashby",
+    "board": "aurora-operations-inc",
+    "track": "av",
+    "homepage": "https://aurora.tech/careers"
+  },
+  {
+    "id": "nuro",
+    "company": "Nuro",
+    "provider": "greenhouse",
+    "board": "nuro",
+    "track": "av",
+    "homepage": "https://www.nuro.ai/careers"
+  },
+  {
+    "id": "waabi",
+    "company": "Waabi",
+    "provider": "lever",
+    "board": "waabi",
+    "track": "av",
+    "homepage": "https://waabi.ai/careers"
+  },
+  {
+    "id": "geico",
+    "company": "GEICO",
+    "provider": "workday",
+    "host": "geico.wd1.myworkdayjobs.com",
+    "tenant": "geico",
+    "board": "External",
+    "track": "insurance",
+    "queries": [
+      "research",
+      "data scientist",
+      "modeling",
+      "actuarial"
+    ],
+    "homepage": "https://geico.wd1.myworkdayjobs.com/External"
+  },
+  {
+    "id": "atbay",
+    "company": "At-Bay",
+    "provider": "greenhouse",
+    "board": "atbayjobs",
+    "track": "insurance",
+    "homepage": "https://job-boards.greenhouse.io/atbayjobs"
+  },
+  {
+    "id": "travelers",
+    "company": "Travelers",
+    "provider": "workday",
+    "host": "travelers.wd5.myworkdayjobs.com",
+    "tenant": "travelers",
+    "board": "External",
+    "track": "insurance",
+    "queries": [
+      "research",
+      "data scientist",
+      "modeling",
+      "actuarial"
+    ],
+    "homepage": "https://travelers.wd5.myworkdayjobs.com/External"
+  },
+  {
+    "id": "kittelson",
+    "company": "Kittelson & Associates",
+    "provider": "kittelson",
+    "board": "public",
+    "track": "traffic",
+    "homepage": "https://www.kittelson.com/current-opportunities/",
+    "offices_url": "https://www.kittelson.com/offices/",
+    "coverage_note": "官网当前职位；All 办公室岗位按同一官网办公室名单映射，非精确工位。"
+  },
+  {
+    "id": "wsp",
+    "company": "WSP",
+    "provider": "oracle",
+    "board": "CX_2001",
+    "host": "emit.fa.ca3.oraclecloud.com",
+    "us_location_id": "300000000317426",
+    "queries": [
+      "traffic",
+      "transportation"
+    ],
+    "track": "traffic",
+    "homepage": "https://www.wsp.com/en-us/careers/job-opportunities?country=US"
+  },
+  {
+    "id": "kimley-horn",
+    "company": "Kimley-Horn",
+    "provider": "icims",
+    "board": "public",
+    "track": "traffic",
+    "queries": [
+      "transportation",
+      "traffic"
+    ],
+    "homepage": "https://jobs-kimley-horn.icims.com/jobs",
+    "coverage_note": "同时参考官方 Discipline/Focus，纳入标题只写 Civil Engineering 的交通实习。"
+  },
+  {
+    "id": "progressive",
+    "company": "Progressive",
+    "provider": "progressive",
+    "board": "public",
+    "track": "insurance",
+    "homepage": "https://careers.progressive.com/jobs/search/",
+    "coverage_note": "完整遍历官网列表；仅收研究、统计、数据科学、精算及定价建模，不纳入理赔、销售。"
+  },
+  {
+    "id": "bcbsa",
+    "company": "Blue Cross Blue Shield Association",
+    "provider": "workday",
+    "host": "bcbsa.wd1.myworkdayjobs.com",
+    "tenant": "bcbsa",
+    "board": "Careers",
+    "track": "insurance",
+    "queries": [
+      "research",
+      "scientist",
+      "modeling",
+      "actuarial",
+      "statistician",
+      "pricing"
+    ],
+    "homepage": "https://bcbsa.wd1.myworkdayjobs.com/Careers",
+    "coverage_note": "全国协会，独立于各州 BCBS 公司。"
+  },
+  {
+    "id": "bcbsnc",
+    "company": "Blue Cross NC",
+    "provider": "workday",
+    "host": "bcbsnc.wd5.myworkdayjobs.com",
+    "tenant": "bcbsnc",
+    "board": "BCBSNC",
+    "track": "insurance",
+    "queries": [
+      "research",
+      "scientist",
+      "modeling",
+      "actuarial",
+      "statistician",
+      "pricing"
+    ],
+    "homepage": "https://careers.bcbsnc.com/",
+    "coverage_note": "北卡独立 BCBS 公司；全州 Remote 不自动等同 Raleigh 办公岗位。"
+  },
+  {
+    "id": "cambia",
+    "company": "Cambia / Regence",
+    "provider": "workday",
+    "host": "cambiahealth.wd504.myworkdayjobs.com",
+    "tenant": "cambiahealth",
+    "board": "External",
+    "track": "insurance",
+    "queries": [
+      "research",
+      "scientist",
+      "modeling",
+      "actuarial",
+      "statistician",
+      "pricing"
+    ],
+    "homepage": "https://www.cambiahealth.com/careers",
+    "coverage_note": "覆盖 Regence 等业务的招聘入口；核对每条职位所属机构。"
+  },
+  {
+    "id": "xpeng",
+    "company": "XPENG",
+    "provider": "greenhouse",
+    "board": "xpengmotors",
+    "track": "av",
+    "homepage": "https://www.xpeng.com/join-us",
+    "additional_titles": "General Intelligence Center|Robotics Center",
+    "coverage_note": "全球板仅保留七个美国都会区及美国 Remote；包括明确 AI/机器人中心的校招及实习。"
+  },
+  {
+    "id": "gm-autonomy",
+    "company": "GM · Autonomy / Cruise 后续方向",
+    "provider": "gmxml",
+    "board": "public",
+    "track": "av",
+    "homepage": "https://search-careers.gm.com/en/jobs/",
+    "feed_url": "https://search-careers.gm.com/en/jobs/xml/?rss=true",
+    "coverage_note": "Cruise 已被 GM 全资收购。此处追踪 GM 当前自动驾驶/研究职位，不声称是独立 Cruise 招聘。"
+  },
+  {
+    "id": "didi",
+    "company": "DiDi",
+    "provider": "didi",
+    "board": "public",
+    "track": "av",
+    "homepage": "https://careers.didiglobal.com/",
+    "api_url": "https://cdncareers.didiglobal.com:34003",
+    "coverage_note": "国际公开招聘板；七个美国都会区/美国 Remote 的研究类岗位。目前没有匹配不等于全球无职位，也不覆盖中国招聘站。"
+  }
 ]
